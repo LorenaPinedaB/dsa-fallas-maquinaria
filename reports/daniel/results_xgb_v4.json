@@ -1,0 +1,23 @@
+{
+  "group_cv_accuracy_mean": 0.9750177187724642,
+  "group_cv_accuracy_std": 0.01015182414452101,
+  "group_cv_f1_macro_mean": 0.9703496211348883,
+  "group_cv_f1_macro_std": 0.011321896950231737,
+  "group_cv_balanced_accuracy_mean": 0.9658861301898141,
+  "group_cv_balanced_accuracy_std": 0.014631327796163024,
+  "group_oof_accuracy": 0.975,
+  "group_oof_f1_macro": 0.9705230948048216,
+  "group_oof_balanced_accuracy": 0.9657083031752632,
+  "n_records_train": 1560,
+  "n_features_temporal": 60,
+  "n_features_spectral": 18,
+  "n_features_total": 78,
+  "n_classes": 10,
+  "n_splits": 5,
+  "early_stopping_rounds": 50,
+  "random_state": 42,
+  "test_accuracy": 0.9923273657289002,
+  "test_f1_macro": 0.9885751648452048,
+  "test_balanced_accuracy": 0.9846657183499289,
+  "final_n_estimators": 1077
+}

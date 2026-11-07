@@ -1,0 +1,17 @@
+{
+  "group_cv_accuracy_mean": 0.969215348337665,
+  "group_cv_accuracy_std": 0.011304736860977584,
+  "group_cv_f1_macro_mean": 0.9646257749121917,
+  "group_cv_f1_macro_std": 0.011084868438786111,
+  "group_cv_balanced_accuracy_mean": 0.9601072886709829,
+  "group_cv_balanced_accuracy_std": 0.012534307422532559,
+  "group_oof_accuracy": 0.9692307692307692,
+  "group_oof_f1_macro": 0.964763330850255,
+  "group_oof_balanced_accuracy": 0.9599341571713907,
+  "n_records": 1560,
+  "n_features": 60,
+  "n_classes": 10,
+  "n_splits": 5,
+  "early_stopping_rounds": 50,
+  "random_state": 42
+}

@@ -1,0 +1,33 @@
+{
+  "test_accuracy": 0.9872122762148338,
+  "test_f1_macro": 0.9879981023542668,
+  "test_balanced_accuracy": 0.9878033701717912,
+  "cv_accuracy_mean": 0.973076923076923,
+  "cv_accuracy_std": 0.011467015269229691,
+  "cv_accuracy_train_mean": 1.0,
+  "cv_f1_macro_mean": 0.9672821133902785,
+  "cv_f1_macro_std": 0.01780158534668823,
+  "cv_f1_macro_train_mean": 1.0,
+  "cv_balanced_accuracy_mean": 0.9634160657872399,
+  "cv_balanced_accuracy_std": 0.020225683438590877,
+  "cv_balanced_accuracy_train_mean": 1.0,
+  "selected_n_estimators_median_cv": 676,
+  "boosting_curve_best_iteration": 784,
+  "n_train": 1560,
+  "n_test": 391,
+  "n_features": 60,
+  "n_classes": 10,
+  "class_names": [
+    "horizontal_misalignment",
+    "imbalance",
+    "normal",
+    "overhang_ball_fault",
+    "overhang_cage_fault",
+    "overhang_outer_race",
+    "underhang_ball_fault",
+    "underhang_cage_fault",
+    "underhang_outer_race",
+    "vertical_misalignment"
+  ],
+  "random_state": 42
+}
