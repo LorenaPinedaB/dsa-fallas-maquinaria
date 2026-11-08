@@ -3,6 +3,10 @@ numpy
 scipy
 matplotlib
 seaborn
-scikit-learn
 jupyter
 dvc[s3]
+dash
+plotly
+xgboost==3.4.1
+scikit-learn==1.9.1
+mlflow==3.18.0
