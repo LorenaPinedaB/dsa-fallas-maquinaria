@@ -1,0 +1,5 @@
+outs:
+- md5: 81faebc9bfba2fa7db55547d670df6b1
+  size: 5812389
+  hash: md5
+  path: xgboost_v2_bundle.joblib
