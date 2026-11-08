@@ -465,6 +465,30 @@ final_model.fit(
     X_train_imp,
     y
 )
+# ============================================================
+# GUARDAR MODELO FINAL V4
+# ============================================================
+
+import joblib
+
+MODEL_DIR = ROOT / "models" / "daniel"
+MODEL_DIR.mkdir(parents=True, exist_ok=True)
+
+v4_bundle = {
+    "model": final_model,
+    "imputer": final_imputer,
+    "feature_cols": feature_cols,
+    "class_names": class_names,
+    "version": "XGBoost_V4",
+    "n_features": len(feature_cols),
+}
+
+joblib.dump(
+    v4_bundle,
+    MODEL_DIR / "xgboost_v4_bundle.joblib"
+)
+
+print("Modelo V4 guardado correctamente.")
 
 test_pred = final_model.predict(X_test_imp)
 
