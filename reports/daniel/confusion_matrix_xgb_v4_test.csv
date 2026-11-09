@@ -1,0 +1,11 @@
+,horizontal_misalignment,imbalance,normal,overhang_ball_fault,overhang_cage_fault,overhang_outer_race,underhang_ball_fault,underhang_cage_fault,underhang_outer_race,vertical_misalignment
+horizontal_misalignment,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+imbalance,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
+normal,0.0,0.0,0.9,0.0,0.0,0.1,0.0,0.0,0.0,0.0
+overhang_ball_fault,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0
+overhang_cage_fault,0.0,0.0,0.0,0.0,0.9736842105263158,0.0,0.02631578947368421,0.0,0.0,0.0
+overhang_outer_race,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0
+underhang_ball_fault,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0
+underhang_cage_fault,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0
+underhang_outer_race,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.972972972972973,0.02702702702702703
+vertical_misalignment,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0
