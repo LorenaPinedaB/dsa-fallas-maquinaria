@@ -1,0 +1,16 @@
+                         precision    recall  f1-score   support
+
+horizontal_misalignment       0.97      0.82      0.89        39
+              imbalance       0.98      0.97      0.98        67
+                 normal       1.00      0.80      0.89        10
+    overhang_ball_fault       1.00      1.00      1.00        27
+    overhang_cage_fault       0.90      0.95      0.92        38
+    overhang_outer_race       0.97      1.00      0.99        38
+   underhang_ball_fault       1.00      1.00      1.00        37
+   underhang_cage_fault       0.95      0.97      0.96        38
+   underhang_outer_race       1.00      1.00      1.00        37
+  vertical_misalignment       0.92      1.00      0.96        60
+
+               accuracy                           0.96       391
+              macro avg       0.97      0.95      0.96       391
+           weighted avg       0.97      0.96      0.96       391
