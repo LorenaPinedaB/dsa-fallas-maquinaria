@@ -69,9 +69,12 @@ app = FastAPI(
 class PredictionRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    features: dict[str, float] = Field(
+    features: dict[str, float | None] = Field(
         ...,
-        description="Diccionario con las 78 características del modelo XGBoost V4."
+        description=(
+            "Diccionario con las 78 características del modelo XGBoost V4. "
+            "Se permiten valores null para características faltantes."
+        )
     )
 
 
@@ -131,7 +134,11 @@ def predict(request: PredictionRequest):
     try:
         # Mantener exactamente el orden usado durante el entrenamiento.
         input_df = pd.DataFrame(
-            [[received_features[col] for col in feature_cols]],
+            [[
+                float("nan") if received_features[col] is None
+                else received_features[col]
+                for col in feature_cols
+            ]],
             columns=feature_cols,
         )
 
