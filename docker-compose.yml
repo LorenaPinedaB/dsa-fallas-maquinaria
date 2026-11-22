@@ -1,0 +1,22 @@
+# Levanta la API y el tablero juntos en una misma máquina:
+#   docker compose up -d --build
+# API:     http://<IP>:8000/docs
+# Tablero: http://<IP>:8050
+services:
+  api:
+    build:
+      context: .
+      dockerfile: api/Dockerfile
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  tablero:
+    build: ./dashboard
+    ports:
+      - "8050:8050"
+    environment:
+      - API_URL=http://api:8000
+    depends_on:
+      - api
+    restart: unless-stopped

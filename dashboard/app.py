@@ -1,45 +1,45 @@
 """
-Tablero de diagnóstico de fallas en maquinaria rotativa (Entrega 2).
+Tablero de diagnóstico de fallas en maquinaria rotativa (entrega final).
 
 Qué hace:
-  1. Carga la tabla de características (data/features_mafaulda.csv) y el
-     manifiesto de partición de Daniel para quedarse con las grabaciones de PRUEBA
-     (las que el modelo no vio al entrenar).
-  2. Carga el modelo XGBoost V2 (models/xgboost_v2_bundle.joblib).
-  3. El usuario elige una lectura, da clic en "Diagnosticar" y el tablero muestra:
-     diagnóstico, probabilidad por clase, comparación con la condición normal
-     y una recomendación de inspección.
+  1. Carga las lecturas de prueba (dashboard/data/lecturas.csv), que genera el
+     script dashboard/preparar_lecturas.py a partir de la tabla de 78 características.
+  2. El usuario elige una lectura y da clic en "Diagnosticar".
+  3. El tablero envía las 78 características a la API de inferencia (POST /predict),
+     que usa el modelo XGBoost V4, y muestra: diagnóstico, probabilidad por clase,
+     comparación con la condición normal y una recomendación de inspección.
 
-En esta entrega el tablero carga el modelo localmente. En la entrega final solo
-hay que cambiar el contenido de la función `predecir()` por una llamada a la API.
+La dirección de la API se configura con la variable de entorno API_URL
+(por defecto http://localhost:8000).
 
-Cómo correrlo (desde la carpeta raíz del repositorio, con el ambiente activo):
+Cómo correrlo en local (desde la raíz del repositorio, con el ambiente activo):
+    export API_URL=http://<IP-DE-LA-API>:8000
     python dashboard/app.py
 y abrir en el navegador: http://127.0.0.1:8050
 """
 
+import os
 from pathlib import Path
 
-import joblib
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+import requests
 from dash import Dash, Input, Output, State, dcc, html
 
 # ============================================================
-# 1. RUTAS (relativas a la raíz del repositorio)
+# 1. CONFIGURACIÓN
 # ============================================================
-ROOT = Path(__file__).resolve().parents[1]
-DATA_PATH = ROOT / "data" / "features_mafaulda.csv"
-MANIFEST_PATH = ROOT / "reports" / "daniel" / "split_manifest_xgb_v1.csv"
-MODEL_PATH = ROOT / "models" / "xgboost_v2_bundle.joblib"
+DATA_PATH = Path(__file__).resolve().parent / "data" / "lecturas.csv"
+API_URL = os.getenv("API_URL", "http://localhost:8000").rstrip("/")
+TIEMPO_ESPERA_API = 15  # segundos
 
 # Información del modelo que se muestra en el tablero
 MODEL_INFO = {
-    "nombre": "XGBoost V2",
-    "corrida_mlflow": "xgb_estratificado_v2_robusto",
-    "f1_prueba": 0.988,
-    "variables": 60,
+    "nombre": "XGBoost V4",
+    "corrida_mlflow": "xgb_spectral_orders_v4",
+    "f1_prueba": 0.9886,
+    "variables": 78,
 }
 
 # ============================================================
@@ -108,63 +108,49 @@ POSICIONES = {"underhang": "Rod. interno", "overhang": "Rod. externo"}
 EJES = {"axial": "Axial", "radial": "Radial", "tangential": "Tangencial"}
 
 # ============================================================
-# 3. CARGA DE DATOS Y MODELO
+# 3. CARGA DE LAS LECTURAS
 # ============================================================
-bundle = joblib.load(MODEL_PATH)
-pipeline = bundle["pipeline"]
-encoder = bundle["label_encoder"]
-FEATURES = bundle["feature_columns"]
-
-
-def construir_objetivo(df):
-    """Misma definición que usó Daniel: fault_type + posición para rodamientos."""
-    objetivo = df["fault_type"].astype(str).copy()
-    es_rodamiento = df["bearing_position"].notna()
-    objetivo[es_rodamiento] = (
-        df.loc[es_rodamiento, "bearing_position"].astype(str) + "_" + objetivo[es_rodamiento]
-    )
-    return objetivo
-
-
-def clave_archivo(ruta):
-    """Parte de la ruta desde MAFAULDA, para que coincida en cualquier computador."""
-    ruta = str(ruta).replace("\\", "/")
-    return ruta.split("MAFAULDA/")[-1].lower()
-
+METADATOS = ["clave", "nominal_frequency_hz", "nominal_speed_rpm", "clase_real", "particion"]
 
 datos = pd.read_csv(DATA_PATH)
-datos["clase_real"] = construir_objetivo(datos)
-datos["clave"] = datos["filepath"].map(clave_archivo)
+FEATURES = [c for c in datos.columns if c not in METADATOS]  # las 78 que espera la API
 
-if MANIFEST_PATH.exists():
-    manifiesto = pd.read_csv(MANIFEST_PATH)
-    manifiesto["clave"] = manifiesto["filepath"].map(clave_archivo)
-    datos = datos.merge(manifiesto[["clave", "partition"]], on="clave", how="left")
-    AVISO_PARTICION = "Lecturas del conjunto de prueba (no usadas para entrenar el modelo)."
-else:
-    datos["partition"] = "test"
-    AVISO_PARTICION = "Aviso: no se encontró el manifiesto de partición; se muestran todas las lecturas."
-
-prueba = datos[datos["partition"] == "test"].sort_values("nominal_speed_rpm").reset_index(drop=True)
+prueba = datos[datos["particion"] == "test"].sort_values("nominal_speed_rpm").reset_index(drop=True)
 prueba["id_lectura"] = [f"Lectura {i + 1:03d}" for i in range(len(prueba))]
+AVISO_PARTICION = "Lecturas del conjunto de prueba (no usadas para entrenar el modelo)."
 
 # Referencia de condición normal: solo grabaciones normales de ENTRENAMIENTO
-normales_ref = datos[(datos["clase_real"] == "normal") & (datos["partition"] == "train")]
-if normales_ref.empty:
-    normales_ref = datos[datos["clase_real"] == "normal"]
+normales_ref = datos[(datos["clase_real"] == "normal") & (datos["particion"] == "train")]
 
 
 # ============================================================
-# 4. PREDICCIÓN (en la entrega final, esta función llamará a la API)
+# 4. CONEXIÓN CON LA API
 # ============================================================
-def predecir(caracteristicas):
-    """Recibe un DataFrame de una fila con las 60 variables y devuelve
-    (clase_predicha, diccionario {clase: probabilidad})."""
-    probabilidades = pipeline.predict_proba(caracteristicas[FEATURES])[0]
-    clases = encoder.inverse_transform(np.arange(len(probabilidades)))
-    prob = dict(zip(clases, probabilidades))
-    clase = max(prob, key=prob.get)
-    return clase, prob
+class ErrorAPI(Exception):
+    """Error al consultar la API, con un mensaje para mostrar al usuario."""
+
+
+def predecir(fila):
+    """Envía las 78 características de una lectura a la API y devuelve
+    (clase_predicha, diccionario {clase: probabilidad}, versión del modelo)."""
+    cuerpo = {"features": {col: float(fila[col]) for col in FEATURES}}
+    try:
+        respuesta = requests.post(f"{API_URL}/predict", json=cuerpo, timeout=TIEMPO_ESPERA_API)
+    except requests.RequestException:
+        raise ErrorAPI(f"No fue posible conectarse con la API en {API_URL}.")
+    if respuesta.status_code != 200:
+        raise ErrorAPI(f"La API respondió con un error ({respuesta.status_code}): {respuesta.text[:300]}")
+    resultado = respuesta.json()
+    return resultado["predicted_class"], resultado["probabilities"], resultado.get("model_version", "")
+
+
+def estado_api():
+    """Consulta GET /health. Devuelve True si la API está disponible."""
+    try:
+        respuesta = requests.get(f"{API_URL}/health", timeout=5)
+        return respuesta.status_code == 200 and respuesta.json().get("status") == "healthy"
+    except (requests.RequestException, ValueError):
+        return False
 
 
 def referencia_normal(velocidad_rpm, n=5):
@@ -249,8 +235,9 @@ encabezado = html.Header(
         html.Div(style={"display": "flex", "gap": "8px", "flexWrap": "wrap"}, children=[
             chip(f"Modelo: {MODEL_INFO['nombre']}", "#2A3036", "#E3E6E9"),
             chip(f"F1 macro en prueba: {num(MODEL_INFO['f1_prueba'], 3)}", "#2B3A2F", "#BFE3C6"),
-            chip("Modelo cargado localmente", "#4A3A12", "#F2D99A"),
+            html.Span(id="estado_api"),
         ]),
+        dcc.Interval(id="revisar_api", interval=30_000),
     ],
 )
 
@@ -277,13 +264,14 @@ panel_lectura = html.Aside(
         html.Section(style=TARJETA, children=[
             html.Div("Cómo funciona", style=ETIQUETA),
             html.P(
-                "El tablero toma las 60 características estadísticas de la lectura "
-                "(6 canales de vibración × 10 indicadores) y las pasa al modelo, que "
-                "devuelve la probabilidad de cada una de las 10 condiciones.",
+                "El tablero toma las 78 características de la lectura (10 indicadores "
+                "estadísticos y 3 amplitudes espectrales por cada uno de los 6 canales "
+                "de vibración) y las envía a la API de inferencia, que devuelve la "
+                "probabilidad de cada una de las 10 condiciones.",
                 style={"fontSize": "13px", "lineHeight": 1.5, "color": "#3A4047", "margin": 0},
             ),
             html.P(
-                f"Corrida en MLflow: {MODEL_INFO['corrida_mlflow']}",
+                [f"API: {API_URL}", html.Br(), f"Corrida en MLflow: {MODEL_INFO['corrida_mlflow']}"],
                 style={"fontSize": "12px", "fontFamily": FUENTE_MONO, "color": COLOR_TEXTO,
                        "background": COLOR_FONDO, "padding": "8px 10px", "borderRadius": "4px",
                        "marginBottom": 0},
@@ -478,6 +466,38 @@ def mostrar_velocidad(clave):
 
 
 @app.callback(
+    Output("estado_api", "children"),
+    Input("revisar_api", "n_intervals"),
+)
+def mostrar_estado_api(_n):
+    if estado_api():
+        return chip("API conectada", "#2B3A2F", "#BFE3C6")
+    return chip("API no disponible", "#4A2A12", "#F6C7A8")
+
+
+def figura_vacia():
+    fig = go.Figure()
+    fig.update_layout(
+        plot_bgcolor="white", paper_bgcolor="white", margin=dict(l=10, r=10, t=10, b=10),
+        xaxis=dict(visible=False), yaxis=dict(visible=False),
+        annotations=[dict(text="Sin diagnóstico", showarrow=False,
+                          font=dict(size=14, color=COLOR_SECUNDARIO))],
+    )
+    return fig
+
+
+def bloque_error(mensaje):
+    return [
+        html.Div("2 · Diagnóstico", style=ETIQUETA),
+        html.Div("No se pudo obtener el diagnóstico",
+                 style={"fontSize": "20px", "fontWeight": 700, "color": COLOR_ALERTA}),
+        html.Div(mensaje, style={"fontSize": "13px", "color": "#3A4047", "marginTop": "6px"}),
+        html.Div("Verifique que la API esté encendida y que la variable API_URL tenga su dirección.",
+                 style={"fontSize": "13px", "color": COLOR_SECUNDARIO, "marginTop": "4px"}),
+    ]
+
+
+@app.callback(
     Output("diagnostico", "children"),
     Output("grafico", "figure"),
     Output("tabla", "children"),
@@ -489,8 +509,11 @@ def mostrar_velocidad(clave):
 )
 def diagnosticar(_clics, eje, clave):
     fila = prueba.loc[prueba["clave"] == clave].iloc[0]
-    clase, prob = predecir(prueba.loc[prueba["clave"] == clave])
     tabla, nota = tabla_comparacion(fila, eje)
+    try:
+        clase, prob, _version = predecir(fila)
+    except ErrorAPI as error:
+        return bloque_error(str(error)), figura_vacia(), tabla, nota, []
     return (
         bloque_diagnostico(fila, clase, prob),
         grafico_probabilidades(clase, prob),
@@ -501,4 +524,4 @@ def diagnosticar(_clics, eje, clave):
 
 
 if __name__ == "__main__":
-    app.run(debug=False, host="127.0.0.1", port=8050)
+    app.run(debug=False, host=os.getenv("HOST", "0.0.0.0"), port=int(os.getenv("PORT", "8050")))
