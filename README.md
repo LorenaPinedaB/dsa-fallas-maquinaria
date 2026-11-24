@@ -27,6 +27,7 @@ El proyecto clasifica, a partir de una grabación de vibración de 5 segundos, s
 │   ├── features_mafaulda.csv.dvc           Tabla de características temporales (1.951 × 69)
 │   ├── features_mafaulda_v2.csv.dvc        Tabla maestra temporal + espectral (1.951 × 87, 78 features)
 │   └── raw/MAFAULDA.dvc                    Dataset original
+├── docs/img/manual/                        Capturas usadas en el manual de usuario
 ├── notebooks/
 │   └── eda_brian.ipynb                     Análisis exploratorio de datos
 ├── reports/
@@ -39,6 +40,7 @@ El proyecto clasifica, a partir de una grabación de vibración de 5 segundos, s
 │   └── train_xgboost*.py                   Experimentos XGBoost V1 a V4
 ├── docker-compose.yml                      Orquestación de contenedores (API + Tablero)
 ├── MANUAL_INSTALACION.md                   Manual detallado de instalación y despliegue
+├── MANUAL_USUARIO.md                       Manual de uso e interpretación del tablero
 └── requirements.txt                        Dependencias completas del entorno de entrenamiento
 ```
 
